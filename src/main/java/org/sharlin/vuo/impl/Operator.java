@@ -1,5 +1,21 @@
+/*
+ * Copyright 2016 Johannes Dahlström
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package org.sharlin.vuo.impl;
 
+import java.io.Serializable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -17,15 +33,21 @@ import org.sharlin.vuo.Flow.Subscriber;
  * @author johannesd
  *
  * @param <T>
+ *            the value type of the output subscriber
  * @param <U>
+ *            the value type of the input subscriber
  */
 public interface Operator<T, U> extends
-        Function<Subscriber<? super U>, Subscriber<T>> {
+        Function<Subscriber<? super U>, Subscriber<T>>, Serializable {
 
     /**
      * Returns an operator that transforms a subscriber into one that passes
      * each received value through a mapping function.
      * 
+     * @param <T>
+     *            the output value type
+     * @param <U>
+     *            the input value type
      * @param mapper
      *            the mapping function
      * @return a mapping operator
@@ -45,6 +67,8 @@ public interface Operator<T, U> extends
      * Returns an operator that transforms a subscriber into one that filters
      * out some subset of the received values based on a predicate.
      * 
+     * @param <T>
+     *            the value type
      * @param predicate
      *            the predicate used to test the values
      * @return a filtering operator
@@ -65,6 +89,10 @@ public interface Operator<T, U> extends
      * Returns an operator that transforms a subscriber into one that reduces
      * the values it receives into a single value.
      * 
+     * @param <T>
+     *            the output value type
+     * @param <U>
+     *            the input value type
      * @param reducer
      *            the reducing function
      * @param initial
@@ -94,6 +122,10 @@ public interface Operator<T, U> extends
      * Returns an operator that transforms a subscriber into one that maps
      * values into flows and concatenates the resulting sequence of flows.
      * 
+     * @param <T>
+     *            the output value type
+     * @param <U>
+     *            the input value type
      * @param mapper
      *            the mapping function
      * @return a map-and-flatten operator
@@ -103,7 +135,7 @@ public interface Operator<T, U> extends
         return to -> new Sub<T, U>(to) {
             @Override
             public void onNext(T value) {
-                mapper.apply(value).subscribe( //
+                mapper.apply(value).subscribe(//
                         to::onNext, //
                         to::onError, //
                         () -> {
@@ -116,6 +148,8 @@ public interface Operator<T, U> extends
      * Returns an operator that transforms a subscriber into one that only
      * accepts an initial subsequence of values satisfying the given predicate.
      * 
+     * @param <T>
+     *            the value type
      * @param predicate
      *            the predicate used to pick the prefix sequence
      * @return a prefix sequence operator
@@ -149,6 +183,8 @@ public interface Operator<T, U> extends
      * Returns an operator that transforms a subscriber into one that drops an
      * initial subsequence of values satisfying the given predicate.
      * 
+     * @param <T>
+     *            the value type
      * @param predicate
      *            the predicate used to drop the prefix sequence
      * @return a prefix-dropping operator
@@ -175,7 +211,7 @@ public interface Operator<T, U> extends
  * 
  * TODO consider moving elsewhere.
  * 
- * @author johannesd@vaadin.com
+ * @author johannesd
  *
  * @param <T>
  *            the value type of this subscriber

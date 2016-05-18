@@ -1,6 +1,21 @@
+/*
+ * Copyright 2016 Johannes Dahlström
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package org.sharlin.vuo;
 
-import java.util.Iterator;
+import java.io.Serializable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -14,10 +29,11 @@ import org.sharlin.vuo.impl.Operator;
  * A subscribable, possibly asynchronous sequence of values.
  * <p>
  * Flows are the mathematical <i>dual</i> of {@link Stream streams} and
- * {@link Iterable iterables}. Whereas the latter constitute values that are
- * <i>pulled</i> (for instance, by means of an {@link Iterator iterator}), flows
- * instead <i>push</i> values to their {@link Subscriber subscribers}. A flow
- * thus implements inversion of control compared to streams and iterables.
+ * {@link java.util.Iterable iterables}. Whereas the latter constitute values
+ * that are <i>pulled</i> (for instance, by means of an
+ * {@link java.util.Iterator iterator}), flows instead <i>push</i> values to
+ * their {@link Subscriber subscribers}. A flow thus implements inversion of
+ * control compared to streams and iterables.
  * <p>
  * A subscriber is a callback that the flow invokes with three different
  * signals. A <i>next</i> signal is simply the next value in the flow; an
@@ -27,7 +43,7 @@ import org.sharlin.vuo.impl.Operator;
  * signal. A flow may produce an unbounded number of values and never signal
  * completion.
  * <p>
- * Flows may be asynchronous; that is, its subscribers may be invoked from a
+ * A flow may be asynchronous; that is, its subscribers may be invoked from a
  * thread different from the one in which the subscription occurred; the
  * subscribe method may return before the flow completes. If the flow is
  * asynchronous, it is the responsibility of the subscriber to synchronize its
@@ -43,7 +59,7 @@ import org.sharlin.vuo.impl.Operator;
  * @param <T>
  *            The type of the values in this flow.
  */
-public interface Flow<T> {
+public interface Flow<T> extends Serializable {
 
     /**
      * A subscriber to a flow.
@@ -51,7 +67,7 @@ public interface Flow<T> {
      * @param <T>
      *            the accepted value type
      */
-    public interface Subscriber<T> {
+    public interface Subscriber<T> extends Serializable {
 
         /**
          * Returns a new subscriber that invokes the {@code onNext} consumer for
@@ -328,6 +344,8 @@ public interface Flow<T> {
      * subscribers to the new flow are passed to {@link Operator#apply(Object)
      * op.apply()} and the results subscribed to this flow.
      * 
+     * @param <U>
+     *            the value type of the new flow
      * @param op
      *            the operator with which to adapt subscribers
      * @return a flow with adapted subscribers
