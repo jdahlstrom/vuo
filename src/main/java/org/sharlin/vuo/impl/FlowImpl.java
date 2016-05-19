@@ -44,8 +44,12 @@ public class FlowImpl<T> implements Flow<T> {
 
     @Override
     public Subscription subscribe(Subscriber<? super T> subscriber) {
+        assert !subscriber.isSubscribed() : "subscriber cannot be already subscribed";
+
+        Subscription sub = new Subscription();
+        subscriber.onSubscribe(sub);
         onSubscribe.accept(subscriber);
-        return null;
+        return sub;
     }
 
     @Override
