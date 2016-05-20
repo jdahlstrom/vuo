@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.sharlin.vuo.Flow;
-import org.sharlin.vuo.Flow.Subscriber;
+import org.sharlin.vuo.Subscriber;
 
 /**
  * Transforms a {@link Subscriber} into another. Given a subscriber, returns a

@@ -16,8 +16,8 @@
 
 package org.sharlin.vuo.impl;
 
-import org.sharlin.vuo.Flow.Subscriber;
 import org.sharlin.vuo.Flow.Subscription;
+import org.sharlin.vuo.Subscriber;
 
 /**
  * 

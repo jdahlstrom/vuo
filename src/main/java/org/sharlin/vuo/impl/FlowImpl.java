@@ -18,6 +18,7 @@ package org.sharlin.vuo.impl;
 import java.util.function.Consumer;
 
 import org.sharlin.vuo.Flow;
+import org.sharlin.vuo.Subscriber;
 
 /**
  * A basic concrete implementation of a Flow.
@@ -44,7 +45,8 @@ public class FlowImpl<T> implements Flow<T> {
 
     @Override
     public Subscription subscribe(Subscriber<? super T> subscriber) {
-        assert !subscriber.isSubscribed() : "subscriber cannot be already subscribed";
+        assert !subscriber
+                .isSubscribed() : "subscriber cannot be already subscribed";
 
         Subscription sub = new Subscription();
         subscriber.onSubscribe(sub);
@@ -54,6 +56,6 @@ public class FlowImpl<T> implements Flow<T> {
 
     @Override
     public <U> Flow<U> createFlow(Consumer<Subscriber<? super U>> onSubscribe) {
-        return new FlowImpl<U>(onSubscribe);
+        return new FlowImpl<>(onSubscribe);
     }
 }
