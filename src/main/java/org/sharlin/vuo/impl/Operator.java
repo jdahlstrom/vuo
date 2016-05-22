@@ -146,6 +146,44 @@ public interface Operator<T, U> extends
         };
     }
 
+    public static <T> Operator<T, T> take(long n) {
+        return to -> new Sub<T, T>(to) {
+            private long i = 0;
+
+            @Override
+            protected void doNext(T value) {
+                if (i < n) {
+                    to.onNext(value);
+                } else if (i == n) {
+                    to.onEnd();
+                }
+                i++;
+            }
+
+            @Override
+            protected void doEnd() {
+                if (i < n) {
+                    to.onEnd();
+                }
+            };
+        };
+    }
+
+    public static <T> Operator<T, T> drop(long n) {
+        return to -> new Sub<T, T>(to) {
+            private long i = 0;
+
+            @Override
+            protected void doNext(T value) {
+                if (i < n) {
+                    i++;
+                } else {
+                    to.onNext(value);
+                }
+            }
+        };
+    }
+
     /**
      * Returns an operator that transforms a subscriber into one that only
      * accepts an initial subsequence of values satisfying the given predicate.
