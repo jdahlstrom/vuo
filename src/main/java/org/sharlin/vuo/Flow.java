@@ -16,12 +16,15 @@
 package org.sharlin.vuo;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.BaseStream;
 import java.util.stream.Stream;
 
 import org.sharlin.vuo.impl.FlowImpl;
@@ -97,6 +100,21 @@ public interface Flow<T> extends Serializable {
     }
 
     /**
+     * Returns a new cold flow that produces the given values in sequence and
+     * completes.
+     * 
+     * @param <T>
+     *            the value type of the flow
+     * @param values
+     *            the values to produce
+     * @return a flow produing the values
+     */
+    @SafeVarargs
+    public static <T> Flow<T> of(T... values) {
+        return from(values);
+    }
+
+    /**
      * Returns a new cold flow that produces the given sequence of values and
      * then completes.
      * 
@@ -106,8 +124,7 @@ public interface Flow<T> extends Serializable {
      *            the sequence of values
      * @return a flow producing the values
      */
-    @SafeVarargs
-    public static <T> Flow<T> of(T... values) {
+    public static <T> Flow<T> from(T[] values) {
         return new FlowImpl<>(sub -> {
             for (T t : values) {
                 if (!sub.isSubscribed()) {
@@ -146,6 +163,71 @@ public interface Flow<T> extends Serializable {
     }
 
     /**
+     * Returns a new hot flow, yielding values from the given {@code Stream}.
+     * The first subscriber to subscribe will consume the stream; any subsequent
+     * subscribers will get an empty (immediately completing) flow.
+     * 
+     * @param <T>
+     *            the value type of the flow
+     * @param <S>
+     *            the type of the stream
+     * @param stream
+     *            the stream to consume
+     * @return a flow yielding the values from the stream
+     */
+    public static <T, S extends BaseStream<T, S>> Flow<T> from(
+            BaseStream<T, S> stream) {
+        return new FlowImpl<>(new Consumer<Subscriber<? super T>>() {
+            boolean done = false;
+
+            @Override
+            public void accept(Subscriber<? super T> subscriber) {
+                try {
+                    if (!done) {
+                        Iterator<T> i = stream.iterator();
+                        while (i.hasNext()) {
+                            subscriber.onNext(i.next());
+                        }
+                    }
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                } finally {
+                    subscriber.onEnd();
+                    done = true;
+                }
+            }
+        });
+    }
+
+    /**
+     * Returns a new flow that produces the value of the given future when it
+     * completes, or the error if the future completes exceptionally.
+     * 
+     * @param <T>
+     *            the value type of the flow
+     * @param future
+     *            the future whose result to produce
+     * @return a flow yielding a future result
+     */
+    public static <T> Flow<T> from(CompletableFuture<T> future) {
+        return new FlowImpl<>(sub -> {
+
+            future.whenComplete((value, e) -> {
+                if (value != null) {
+                    sub.onNext(value);
+                } else if (e instanceof Exception) {
+                    sub.onError((Exception) e);
+                } else if (e instanceof Error) {
+                    throw (Error) e;
+                } else {
+                    throw new Error(e);
+                }
+                sub.onEnd();
+            });
+        });
+    }
+
+    /**
      * Returns a new flow drawing values from the given supplier. The supplier
      * is invoked until it returns an empty {@code Optional}; at that point the
      * flow completes. Any exception thrown by the supplier terminates the flow
@@ -171,6 +253,45 @@ public interface Flow<T> extends Serializable {
                     ex = e;
                 }
                 opt.ifPresent(sub::onNext);
+            } while (ex == null && opt.isPresent());
+
+            if (ex != null && sub.isSubscribed()) {
+                sub.onError(ex);
+            }
+            if (sub.isSubscribed()) {
+                sub.onEnd();
+            }
+        });
+    }
+
+    /**
+     * Returns a flow producing values by iteratively applying the given
+     * function to the previous value.
+     * 
+     * @param <T>
+     *            the value type of the flow
+     * @param initial
+     *            the initial value yielded, not null
+     * @param generator
+     *            the function to produce subsequent values
+     * @return a flow yielding values from the function
+     */
+    public static <T> Flow<T> iterate(T initial,
+            Function<T, Optional<T>> generator) {
+        return new FlowImpl<>(sub -> {
+            Optional<T> opt = Optional.of(initial);
+            Exception ex = null;
+            do {
+                if (!sub.isSubscribed()) {
+                    return;
+                }
+                T next = opt.get(); // provably safe
+                sub.onNext(next);
+                try {
+                    opt = generator.apply(next);
+                } catch (Exception e) {
+                    ex = e;
+                }
             } while (ex == null && opt.isPresent());
 
             if (ex != null && sub.isSubscribed()) {
@@ -339,7 +460,7 @@ public interface Flow<T> extends Serializable {
     }
 
     /**
-     * Returns a flow with all the values beyond the initial {@code n} values in
+     * Returns a flow with all the values except the initial {@code n} values in
      * this flow. If this flow terminates before yielding {@code n} values, the
      * new flow terminates as well without producing any values.
      * 
@@ -352,8 +473,8 @@ public interface Flow<T> extends Serializable {
     }
 
     /**
-     * Returns a flow constituting all the values in this flow up to, but
-     * excluding, the first value for which the given predicate returns
+     * Returns a flow constituting all the values in this flow up to, but not
+     * including, the first value for which the given predicate returns
      * {@code false}. At that point, the flow completes and the predicate is not
      * applied to any subsequent values. If this flow terminates before the
      * predicate fails, the returned flow terminates as well.
