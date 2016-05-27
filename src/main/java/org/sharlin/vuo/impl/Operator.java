@@ -221,6 +221,7 @@ public interface Operator<T, U> extends
                     to.onNext(value);
                 } else if (i == n) {
                     to.onEnd();
+                    unsubscribe();
                 }
                 i++;
             }
