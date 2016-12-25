@@ -101,6 +101,10 @@ public interface Flow<T> extends Serializable {
         }
     }
 
+    /*
+     * Flow creation.
+     */
+
     /**
      * Returns a new cold flow that produces the given values in sequence and
      * completes.
@@ -116,9 +120,16 @@ public interface Flow<T> extends Serializable {
         return from(values);
     }
 
-    /*
-     * Flow creation.
+    /**
+     * Returns a flow that completes without producing any values.
+     * 
+     * @param <T>
+     *            the value type of the flow
+     * @return an empty flow
      */
+    public static <T> Flow<T> empty() {
+        return of();
+    }
 
     /**
      * Returns a new cold flow that produces the given sequence of values and

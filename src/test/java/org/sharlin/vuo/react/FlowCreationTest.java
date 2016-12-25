@@ -17,6 +17,12 @@ public class FlowCreationTest extends FlowTestBase {
     public Timeout timeout = new Timeout(1000 * FlowTestHarness.TIMEOUT_SEC);
 
     @Test
+    public void testEmpty() {
+        Flow<String> flow = Flow.empty();
+        verifyFlow(flow, expect());
+    }
+
+    @Test
     public void testFromStream() {
         Flow<Integer> flow = Flow
                 .from(Arrays.stream(new int[] { 1, 2, 3 }));
