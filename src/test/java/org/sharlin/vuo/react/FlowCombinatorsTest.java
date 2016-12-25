@@ -2,7 +2,6 @@ package org.sharlin.vuo.react;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.Rule;
@@ -85,18 +84,15 @@ public class FlowCombinatorsTest extends FlowTestBase {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testReduce1() {
-        verifyFlow(flow().reduce((a, b) -> a),
-                expect(Optional.empty()));
+        verifyFlow(flow().reduce((a, b) -> a), expect());
 
-        verifyFlow(flow(1).reduce((a, b) -> a + b), expect(Optional.of(1)));
+        verifyFlow(flow(1).reduce((a, b) -> a + b), expect(1));
 
-        verifyFlow(flow(1, 2).reduce((a, b) -> a + b), expect(Optional.of(3)));
+        verifyFlow(flow(1, 2).reduce((a, b) -> a + b), expect(3));
 
-        verifyFlow(flow(1, 2)
-                .reduce((Object a, Object b) -> Integer.valueOf(a + "" + b)),
-                expect(Optional.of(12)));
+        verifyFlow(flow(1, 2).reduce((a, b) -> Integer.valueOf(a + "" + b)),
+                expect(12));
     }
 
     @Test
@@ -105,7 +101,7 @@ public class FlowCombinatorsTest extends FlowTestBase {
 
         verifyFlow(flow(1, 2, 3, 4).reduce(0, (i, j) -> i + j), expect(10));
 
-        verifyFlow(flow(1, 2).reduce("", (Object a, Object b) -> "" + a + b),
+        verifyFlow(flow(1, 2).reduce("", (Object a, Object b) -> a + "" + b),
                 expect("12"));
 
         verifyFlow(flow(1, 2, 3).reduce(0, (i, j) -> i + j),

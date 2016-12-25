@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -455,18 +456,17 @@ public interface Flow<T> extends Serializable {
     }
 
     /**
-     * Returns a new flow containing at most a single {@code Optional} value:
-     * the result of passing each value in this flow through the given reduction
-     * function, or an empty optional if this flow is empty. The returned flow
-     * produces the result, and an {@link Subscriber#onEnd() onEnd} signal, if
-     * and only if this flow also eventually signals {@code onEnd}.
+     * Returns a new flow containing at most a single value: the result of
+     * passing each value in this flow through the given reduction function. If
+     * this flow is empty, the resulting flow will also be empty. If this flow
+     * never completes, the returned flow never yields a value and never
+     * completes.
      * 
      * @param reducer
      *            the reduction function
      * @return a flow yielding the result of the reduction
      */
-    public default Flow<Optional<T>> reduce(
-            BiFunction<? super T, ? super T, T> reducer) {
+    public default Flow<T> reduce(BinaryOperator<T> reducer) {
         return lift(Operator.reduce(reducer));
     }
 

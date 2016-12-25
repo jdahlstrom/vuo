@@ -16,8 +16,8 @@
 package org.sharlin.vuo.impl;
 
 import java.io.Serializable;
-import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -139,8 +139,8 @@ public interface Operator<T, U> extends
 
     /**
      * Returns an operator that transforms a subscriber into one that reduces
-     * the values it receives into a single {@code Optional} that either
-     * contains the result or is empty if no values were received.
+     * the values it receives into a single value, or no values if no values
+     * were received.
      * 
      * @param <T>
      *            the value type
@@ -148,20 +148,27 @@ public interface Operator<T, U> extends
      *            the reducing function
      * @return a reduction operator
      */
-    public static <T> Operator<T, Optional<T>> reduce(
-            BiFunction<? super T, ? super T, T> reducer) {
-        return to -> new Sub<T, Optional<T>>(to) {
-            private Optional<T> accum = Optional.empty();
+    public static <T> Operator<T, T> reduce(
+            BinaryOperator<T> reducer) {
+        return to -> new Sub<T, T>(to) {
+            private T accum = null;
+            private boolean hasValue = false;
 
             @Override
             protected void doNext(T value) {
-                accum = Optional.of(
-                        accum.map(a -> reducer.apply(a, value)).orElse(value));
+                if (hasValue == false) {
+                    accum = value;
+                } else {
+                    accum = reducer.apply(accum, value);
+                }
+                hasValue = true;
             }
 
             @Override
             protected void doEnd() {
-                to.onNext(accum);
+                if (hasValue) {
+                    to.onNext(accum);
+                }
                 if (to.isSubscribed()) {
                     to.onEnd();
                 }
