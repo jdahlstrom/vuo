@@ -1,6 +1,7 @@
 package org.sharlin.vuo.react;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -20,6 +21,45 @@ public class FlowCreationTest extends FlowTestBase {
     public void testEmpty() {
         Flow<String> flow = Flow.empty();
         verifyFlow(flow, expect());
+    }
+
+    @Test
+    public void testOfValues() {
+        Flow<String> flow = Flow.of("a", "b", "c");
+        verifyFlow(flow, expect("a", "b", "c"));
+
+        flow = Flow.of();
+        verifyFlow(flow, expect());
+    }
+
+    @Test
+    public void testFromArray() {
+        Flow<Integer> flow = Flow.from(new Integer[] { 1, 2, 3 });
+        verifyFlow(flow, expect(1, 2, 3));
+
+        flow = Flow.from(new Integer[] {});
+        verifyFlow(flow, expect());
+    }
+
+    @Test
+    public void testFromIterable() {
+        Flow<Integer> flow = Flow.from(
+                (Iterable<Integer>) Arrays.asList(1, 2, 3));
+        verifyFlow(flow, expect(1, 2, 3));
+
+        Iterator<Integer> infinite = new Iterator<Integer>() {
+            @Override
+            public boolean hasNext() {
+                return true;
+            }
+
+            @Override
+            public Integer next() {
+                return 42;
+            }
+        };
+        flow = Flow.from(() -> infinite);
+        verifyFlow(flow.take(3), expect(42, 42, 42));
     }
 
     @Test
