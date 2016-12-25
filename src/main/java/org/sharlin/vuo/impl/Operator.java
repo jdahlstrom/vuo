@@ -287,11 +287,12 @@ public interface Operator<T, U> extends
             protected void doNext(T value) {
                 if (i < n) {
                     to.onNext(value);
-                } else if (i == n) {
+                    i++;
+                }
+                if (i == n) {
                     to.onEnd();
                     unsubscribe();
                 }
-                i++;
             }
 
             @Override
