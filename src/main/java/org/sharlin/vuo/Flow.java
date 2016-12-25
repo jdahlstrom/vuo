@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.BaseStream;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -270,25 +271,23 @@ public interface Flow<T> extends Serializable {
      * @param <T>
      *            the value type of the flow
      * @param supplier
-     *            the producer of values
+     *            the producer of values, not null
      * @return a flow yielding values from the supplier
      */
-    public static <T> Flow<T> generate(Supplier<Optional<T>> supplier) {
+    public static <T> Flow<T> generate(Supplier<T> supplier) {
         return new FlowImpl<>(sub -> {
-            Optional<T> opt = Optional.empty();
+            T next = null;
             Exception ex = null;
-            do {
-                if (!sub.isSubscribed()) {
-                    return;
-                }
+            while (ex == null && sub.isSubscribed()) {
                 try {
-                    opt = supplier.get();
+                    next = supplier.get();
                 } catch (Exception e) {
                     ex = e;
                 }
-                opt.ifPresent(sub::onNext);
-            } while (ex == null && opt.isPresent());
-
+                if (ex == null) {
+                    sub.onNext(next);
+                }
+            }
             if (ex != null && sub.isSubscribed()) {
                 sub.onError(ex);
             }
@@ -300,34 +299,29 @@ public interface Flow<T> extends Serializable {
 
     /**
      * Returns a flow producing values by iteratively applying the given
-     * function to the previous value.
+     * operator to the given initial value.
      * 
      * @param <T>
      *            the value type of the flow
      * @param initial
-     *            the initial value yielded, not null
-     * @param generator
-     *            the function to produce subsequent values
+     *            the initial value yielded
+     * @param operator
+     *            the function to produce subsequent values, not null
      * @return a flow yielding values from the function
      */
     public static <T> Flow<T> iterate(T initial,
-            Function<T, Optional<T>> generator) {
+            UnaryOperator<T> operator) {
         return new FlowImpl<>(sub -> {
-            Optional<T> opt = Optional.of(initial);
+            T next = initial;
             Exception ex = null;
-            do {
-                if (!sub.isSubscribed()) {
-                    return;
-                }
-                T next = opt.get(); // provably safe
+            while (ex == null && sub.isSubscribed()) {
                 sub.onNext(next);
                 try {
-                    opt = generator.apply(next);
+                    next = operator.apply(next);
                 } catch (Exception e) {
                     ex = e;
                 }
-            } while (ex == null && opt.isPresent());
-
+            }
             if (ex != null && sub.isSubscribed()) {
                 sub.onError(ex);
             }

@@ -15,7 +15,7 @@ import org.sharlin.vuo.react.harnesses.SyncFlowTestHarness;
 public class FlowCreationTest extends FlowTestBase {
 
     @Rule
-    public Timeout timeout = new Timeout(1000 * FlowTestHarness.TIMEOUT_SEC);
+    public Timeout timeout = new Timeout(1000000 * FlowTestHarness.TIMEOUT_SEC);
 
     @Test
     public void testEmpty() {
@@ -103,35 +103,31 @@ public class FlowCreationTest extends FlowTestBase {
     @Test
     public void testGenerate() {
         int[] counter = new int[] { 0 };
-        Flow<Integer> flow = Flow.generate(() -> {
-            return counter[0] < 5 ? Optional.of(counter[0]++) : Optional
-                    .empty();
+        Flow<Integer> flow = Flow.generate(() -> counter[0]++);
+
+        verifyFlow(flow.take(5), expect(0, 1, 2, 3, 4).get());
+        verifyFlow(flow, expectAndUnsubscribe(5, 6, 7).get());
+        verifyFlow(flow.take(1), expect(8).get());
+
+        RuntimeException e = new RuntimeException();
+        flow = Flow.generate(() -> {
+            throw e;
         });
-
-        verifyFlow(flow, expect(0, 1, 2, 3, 4).get());
-        verifyFlow(flow, expect().get());
-
-        // Infinite flow
-        flow = Flow.generate(() -> Optional.of(42));
-
-        verifyFlow(flow.take(4), expect(42, 42, 42, 42));
-        verifyFlow(flow, expectAndUnsubscribe(42, 42, 42).get());
+        verifyFlow(flow, expectError(e));
     }
 
     @Test
     public void testIterate() {
-        Flow<Integer> flow = Flow.iterate(1, i -> {
-            return i < 5 ? Optional.of(2 * i) : Optional.empty();
-        });
+        Flow<Integer> flow = Flow.iterate(1, i -> i * 2);
 
-        verifyFlow(flow, expect(1, 2, 4, 8));
+        verifyFlow(flow.take(4), expect(1, 2, 4, 8));
         verifyFlow(flow, expectAndUnsubscribe(1, 2));
 
-        // Infinite flow
-        flow = Flow.iterate(1, i -> Optional.of(i + 2));
-
-        verifyFlow(flow.takeWhile(i -> i < 10), expect(1, 3, 5, 7, 9));
-        verifyFlow(flow, expectAndUnsubscribe(1, 3).get());
+        RuntimeException e = new RuntimeException();
+        flow = Flow.iterate(0, x -> {
+            throw e;
+        });
+        verifyFlow(flow.skip(1), expectError(e));
     }
 
     @Override
